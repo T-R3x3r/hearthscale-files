@@ -1,0 +1,36 @@
+{
+  "id": "files",
+  "name": "Files",
+  "version": "1.0.0",
+  "api": 4,
+  "icon": {
+    "light": "assets/icon-light.svg",
+    "dark": "assets/icon-dark.svg"
+  },
+  "description": "Browse the folders you choose and preview their files: documents, pictures, PDFs, sounds and videos.",
+  "environment": {
+    "kind": "process"
+  },
+  "uses": [
+    "roots",
+    "files.open"
+  ],
+  "contributes": {
+    "main": {
+      "kind": "own",
+      "title": "Files"
+    }
+  },
+  "surfaces": [
+    {
+      "id": "files",
+      "kind": "view",
+      "title": "Files",
+      "entry": "views/files.js",
+      "placements": [
+        "rail",
+        "tab"
+      ]
+    }
+  ]
+}
