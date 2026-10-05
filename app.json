@@ -2,7 +2,7 @@
   "id": "files",
   "name": "Files",
   "version": "1.0.0",
-  "api": 4,
+  "api": 6,
   "icon": {
     "light": "assets/icon-light.svg",
     "dark": "assets/icon-dark.svg"
@@ -15,12 +15,6 @@
     "roots",
     "files.open"
   ],
-  "contributes": {
-    "main": {
-      "kind": "own",
-      "title": "Files"
-    }
-  },
   "surfaces": [
     {
       "id": "files",
