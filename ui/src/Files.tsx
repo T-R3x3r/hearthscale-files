@@ -303,18 +303,18 @@ export function Files({ host }: { host: Host }) {
         {preview && preview.show !== 'refused' && (
           <StripButton onClick={() => void attach(preview.path)}>
             <Icon name="add-fill" size={14} />
-            <Tip style={{ top: 32, right: 0 }} title="Add to chat" />
+            <Tip style={{ top: 'calc(var(--space) * 8)', right: 0 }} title="Add to chat" />
           </StripButton>
         )}
         {preview && (
           <StripButton onClick={() => void open(preview.path)}>
             <Icon name="arrow-right-up-line" size={13} />
-            <Tip style={{ top: 32, right: 0 }} title="Open" />
+            <Tip style={{ top: 'calc(var(--space) * 8)', right: 0 }} title="Open" />
           </StripButton>
         )}
         <StripButton onClick={() => void pick()}>
           <Icon name="folder-add-line" size={14} />
-          <Tip style={{ top: 32, right: 0 }} title="Choose a folder" />
+          <Tip style={{ top: 'calc(var(--space) * 8)', right: 0 }} title="Choose a folder" />
         </StripButton>
       </div>
       <div className="hs-rview hs-file-view">

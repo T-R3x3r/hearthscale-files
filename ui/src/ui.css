@@ -20,7 +20,7 @@
 
 .hs-empty-view > .files-glyph {
   color: var(--dim);
-  margin-bottom: 4px;
+  margin-bottom: var(--space);
 }
 
 .hs-shell :is(.hs-glassbtn, .hs-hovbox, .hs-hovbox-ink, .hs-button):active .files-glyph {
@@ -62,11 +62,11 @@
 
 .files-pdf {
   overflow: auto;
-  padding: 12px;
+  padding: calc(var(--space) * 3);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: calc(var(--space) * 3);
   background: #282828;
 }
 

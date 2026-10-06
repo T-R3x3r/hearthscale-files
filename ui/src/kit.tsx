@@ -110,9 +110,6 @@ export function SettingsSearch({
   );
 }
 
-/** How long a menu takes to close. */
-const MENU_CLOSE_MS = 140;
-
 /** A menu on the frosted popup surface, under the element it opens from
  *  and inside the page. It closes when the pointer leaves it, on Escape,
  *  and on a press outside it. */
@@ -129,13 +126,9 @@ export function MenuSurface({
 }) {
   const menu = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<CSSProperties>({ visibility: 'hidden' });
-  const [closing, setClosing] = useState(false);
   const dismiss = useRef(onDismiss);
   dismiss.current = onDismiss;
-  const close = () => {
-    setClosing(true);
-    setTimeout(() => dismiss.current(), MENU_CLOSE_MS);
-  };
+  const close = () => dismiss.current();
   useEffect(() => {
     const escape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
@@ -196,8 +189,7 @@ export function MenuSurface({
     >
       <div
         className="hs-menu hs-menu-surface"
-        data-closing={closing ? 'true' : 'false'}
-        style={{ minWidth: `min(${minWidth}px, calc(100vw - 16px))` }}
+        style={{ minWidth: `min(${minWidth}px, calc(100vw - var(--space) * 4))` }}
       >
         {children}
       </div>
