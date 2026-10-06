@@ -26,5 +26,10 @@
         "tab"
       ]
     }
-  ]
+  ],
+  "license": "MIT",
+  "categories": [
+    "productivity"
+  ],
+  "payment": "free"
 }
