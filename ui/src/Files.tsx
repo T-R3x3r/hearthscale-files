@@ -1,9 +1,11 @@
 /**
  * The Files view: a folder's tree on the right, a preview on the left,
  * read through the platform inside the folders the person gave the app.
- * The view starts in the folder the person gave last, and the pointer's
- * back and forward walk the folders it came through. A folder opens with
- * its rows' system icons in hand. A read the platform refused says why.
+ * The view starts in the folder the person gave last, or at the file the
+ * window opened it at, selected in its folder with its preview; the
+ * pointer's back and forward walk the folders it came through. A folder
+ * opens with its rows' system icons in hand. A read the platform refused
+ * says why.
  */
 import {
   useCallback,
@@ -19,7 +21,7 @@ import { wordsOf, type Host, type Listing, type Mount } from './host.ts';
 import { Icon, MItem, MenuSurface, SettingsSearch, StripButton, Tip } from './kit.tsx';
 import { FileKindGlyph, SystemIcon, primeIcons, type IconSource } from './kinds.tsx';
 import { PreviewBody, readPreview, type Preview } from './Preview.tsx';
-import { baseName, holds, joinPath } from './words.ts';
+import { baseName, folderOf, holds, joinPath } from './words.ts';
 
 /** The path broken into the pieces a breadcrumb can walk back through. */
 function crumbs(path: string, root: string): { label: string; path: string }[] {
@@ -76,16 +78,23 @@ function useRowWindow(at: string) {
 function TreeRow({
   icon,
   name,
+  selected = false,
   onClick,
   onMenu,
 }: {
   icon: ReactNode;
   name: string;
+  /** The row of the file the preview shows. */
+  selected?: boolean;
   onClick: () => void;
   onMenu?: (e: ReactMouseEvent<HTMLElement>) => void;
 }) {
   return (
-    <div className="hs-hovbox-ink hs-file-row" onClick={onClick} onContextMenu={onMenu}>
+    <div
+      className={`hs-hovbox-ink hs-file-row${selected ? ' hs-boxsel' : ''}`}
+      onClick={onClick}
+      onContextMenu={onMenu}
+    >
       {icon}
       <span className="hs-file-entry-name">{name}</span>
     </div>
@@ -134,14 +143,16 @@ export function Files({ host }: { host: Host }) {
   const stood = useRef(-1);
   const icons = useCallback<IconSource>((path, isDir) => host.icon(path, isDir), [host]);
 
-  const load = async (path: string, remember = true) => {
+  /** Opens a folder in the tree; answers its listing, or null when the
+   *  read was refused or a newer one took its place. */
+  const load = async (path: string, remember = true): Promise<Listing | null> => {
     const mine = ++listingAsk.current;
     let next: Listing;
     try {
       next = await host.list(path);
     } catch (e) {
       if (mine === listingAsk.current) setListRefusal(wordsOf(e));
-      return;
+      return null;
     }
     await primeIcons(icons, [
       ...next.dirs.slice(0, FIRST_ROWS).map((name) => ({
@@ -150,7 +161,7 @@ export function Files({ host }: { host: Host }) {
       })),
       ...next.files.map((name) => ({ path: joinPath(next.path, name), isDir: false })),
     ]);
-    if (mine !== listingAsk.current) return;
+    if (mine !== listingAsk.current) return null;
     if (remember && walked.current[stood.current] !== next.path) {
       walked.current = [...walked.current.slice(0, stood.current + 1), next.path];
       stood.current = walked.current.length - 1;
@@ -158,6 +169,7 @@ export function Files({ host }: { host: Host }) {
     setFilter('');
     setListRefusal(null);
     setListing(next);
+    return next;
   };
 
   const walk = (by: number) => {
@@ -220,13 +232,36 @@ export function Files({ host }: { host: Host }) {
     await host.context([...kept, block]);
   };
 
+  /** The row the tree scrolls to once its folder shows. */
+  const [focus, setFocus] = useState<string | null>(null);
+
+  /** Shows a file the window opened the view at: its folder, read with
+   *  the folders the app was given since, and the file selected with its
+   *  preview. */
+  const reveal = async (path: string) => {
+    setMounts(await host.mounts());
+    const shown = await load(folderOf(path));
+    if (!shown) return;
+    const file = joinPath(shown.path, baseName(path));
+    setFocus(file);
+    void show(file);
+  };
+  const revealRef = useRef(reveal);
+  revealRef.current = reveal;
+
   const begin = (all: Mount[]) => {
     setMounts(all);
+    const opened = host.revealed();
+    if (opened !== null) {
+      void revealRef.current(opened);
+      return;
+    }
     const start = startOf(all);
     if (start) void load(start);
   };
 
   useEffect(() => {
+    host.onRevealed((path) => void revealRef.current(path));
     void host.mounts().then(begin, () => begin([]));
   }, []);
 
@@ -253,6 +288,32 @@ export function Files({ host }: { host: Host }) {
   }, [listing, filter]);
   const [treeBox, span, rowMetric, rowHeight] = useRowWindow(`${listing?.path ?? ''}\0${filter}`);
 
+  // The crumbs end at the folder the tree shows, so it stays in sight
+  // however wide the tile grows or shrinks.
+  const crumbBox = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = crumbBox.current;
+    if (!el) return;
+    const toEnd = () => {
+      el.scrollLeft = el.scrollWidth;
+    };
+    toEnd();
+    const sizes = new ResizeObserver(toEnd);
+    sizes.observe(el);
+    return () => sizes.disconnect();
+  }, [listing?.path, typing]);
+
+  // The revealed file's row is scrolled to the middle of the tree.
+  useEffect(() => {
+    const box = treeBox.current;
+    if (focus === null || !listing || !box || rowHeight <= 0) return;
+    const at = entries.findIndex((entry) => joinPath(listing.path, entry.name) === focus);
+    if (at >= 0) {
+      box.scrollTop = Math.max(0, (at + (parent ? 1 : 0)) * rowHeight - box.clientHeight / 2);
+    }
+    setFocus(null);
+  }, [focus, entries, rowHeight]);
+
   if (mounts === null) return null;
   if (!startOf(mounts) && !listing) return <NoFolder onPick={() => void pick()} />;
 
@@ -276,6 +337,7 @@ export function Files({ host }: { host: Host }) {
           />
         ) : (
           <div
+            ref={crumbBox}
             className="hs-tabscroll hs-file-breadcrumbs"
             onClick={() => setTyping(listing?.path ?? '')}
           >
@@ -375,6 +437,7 @@ export function Files({ host }: { host: Host }) {
                       />
                     }
                     name={entry.name}
+                    selected={!entry.dir && preview?.path === path}
                     onClick={() => void (entry.dir ? load(path) : show(path))}
                     {...(!entry.dir && {
                       onMenu: (e: ReactMouseEvent<HTMLElement>) => {

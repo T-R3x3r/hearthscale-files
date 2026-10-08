@@ -39,6 +39,12 @@ and the reads inside them (`hearthscale/fs/list`, `read`, `raw` and
 open a file in the system's app. "Add to chat" puts a file on the chats
 on screen as a removable chip, through `ui/update-model-context`.
 
+The view `shows` files: a file a turn changed outside a git repository
+opens here, on the address `/?path=<absolute path>`, which the view reads
+as `openai/deepLink`. It shows the file's folder with the file selected
+and its preview; Hearthscale gives the app that folder before it opens
+the view.
+
 ## Traps
 
 - The view's document is framed with an opaque origin, which starts no

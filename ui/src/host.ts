@@ -36,6 +36,14 @@ export type ContextBlock = Record<string, unknown> & { type: string };
 /** The largest file the platform hands the view whole, in bytes. */
 export const RAW_BYTES = 64 * 1024 * 1024;
 
+/** The file an address names, `/?path=<absolute path>`; null for an
+ *  address without one. */
+function pathOf(link: unknown): string | null {
+  const url = (link as { url?: unknown } | undefined)?.url;
+  if (typeof url !== 'string') return null;
+  return new URL(url, 'https://files.invalid').searchParams.get('path');
+}
+
 export class Host {
   constructor(private readonly app: App) {}
 
@@ -110,6 +118,21 @@ export class Host {
     const state = this.app.getHostContext()?.['openai/modelContext'] as
       { content?: ContextBlock[] } | null | undefined;
     return state?.content ?? [];
+  }
+
+  /** The file the window opened the view at, such as a file a turn
+   *  changed; null when it opened on none. */
+  revealed(): string | null {
+    return pathOf(this.app.getHostContext()?.['openai/deepLink']);
+  }
+
+  /** Calls `fn` with each file the window opens the view at while it
+   *  shows. */
+  onRevealed(fn: (path: string) => void): void {
+    this.app.onhostcontextchanged = (changed) => {
+      const path = pathOf(changed['openai/deepLink']);
+      if (path !== null) fn(path);
+    };
   }
 }
 

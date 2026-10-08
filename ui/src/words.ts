@@ -7,6 +7,11 @@ export function baseName(path: string): string {
   return path.split(/[\\/]/).filter(Boolean).pop() ?? path;
 }
 
+/** The folder a path lies in. */
+export function folderOf(path: string): string {
+  return path.replace(/[\\/][^\\/]*$/, '');
+}
+
 /** A size in bytes, in the unit that reads best. */
 export function sizeWords(bytes: number): string {
   if (bytes < 1024) return `${bytes} ${bytes === 1 ? 'byte' : 'bytes'}`;
