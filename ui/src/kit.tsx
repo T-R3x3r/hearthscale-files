@@ -9,7 +9,6 @@ import {
   useRef,
   useState,
   type CSSProperties,
-  type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -67,17 +66,32 @@ export function Tip({ style, title }: { style?: CSSProperties; title: string }) 
   );
 }
 
-/** The square button of the view's toolbar. */
+/** The square button of the view's toolbar, named by its tip, which the
+ *  keyboard reaches and presses with Enter or Space. */
 export function StripButton({
+  label,
   onClick,
   children,
 }: {
-  onClick: (e: ReactMouseEvent<HTMLElement>) => void;
+  label: string;
+  onClick: () => void;
   children: ReactNode;
 }) {
   return (
-    <span onClick={onClick} className="hs-hovbox-ink hs-tipwrap hs-inkdim hs-panel-button">
+    <span
+      role="button"
+      tabIndex={0}
+      aria-label={label}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        onClick();
+      }}
+      className="hs-hovbox-ink hs-tipwrap hs-inkdim hs-panel-button"
+    >
       {children}
+      <Tip style={{ top: 'calc(var(--space) * 8)', right: 0 }} title={label} />
     </span>
   );
 }

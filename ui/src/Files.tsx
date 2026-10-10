@@ -18,7 +18,7 @@ import {
   type ReactNode,
 } from 'react';
 import { wordsOf, type Host, type Listing, type Mount } from './host.ts';
-import { Icon, MItem, MenuSurface, SettingsSearch, StripButton, Tip } from './kit.tsx';
+import { Icon, MItem, MenuSurface, SettingsSearch, StripButton } from './kit.tsx';
 import { FileKindGlyph, SystemIcon, primeIcons, type IconSource } from './kinds.tsx';
 import { PreviewBody, readPreview, type Preview } from './Preview.tsx';
 import { baseName, folderOf, holds, joinPath } from './words.ts';
@@ -363,20 +363,17 @@ export function Files({ host }: { host: Host }) {
           </div>
         )}
         {preview && preview.show !== 'refused' && (
-          <StripButton onClick={() => void attach(preview.path)}>
+          <StripButton label="Add to chat" onClick={() => void attach(preview.path)}>
             <Icon name="add-fill" size={14} />
-            <Tip style={{ top: 'calc(var(--space) * 8)', right: 0 }} title="Add to chat" />
           </StripButton>
         )}
         {preview && (
-          <StripButton onClick={() => void open(preview.path)}>
+          <StripButton label="Open" onClick={() => void open(preview.path)}>
             <Icon name="arrow-right-up-line" size={13} />
-            <Tip style={{ top: 'calc(var(--space) * 8)', right: 0 }} title="Open" />
           </StripButton>
         )}
-        <StripButton onClick={() => void pick()}>
+        <StripButton label="Choose a folder" onClick={() => void pick()}>
           <Icon name="folder-add-line" size={14} />
-          <Tip style={{ top: 'calc(var(--space) * 8)', right: 0 }} title="Choose a folder" />
         </StripButton>
       </div>
       <div className="hs-rview hs-file-view">
