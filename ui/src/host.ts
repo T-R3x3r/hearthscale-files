@@ -48,7 +48,7 @@ export class Host {
   constructor(private readonly app: App) {}
 
   /** One request of the host, its result whole; a refusal rejects with
-   *  the host's words. */
+   *  the SDK's error, whose words `wordsOf` reads. */
   private call<T>(method: string, params: Record<string, unknown> = {}): Promise<T> {
     const request = this.app.request.bind(this.app) as (
       message: { method: string; params: Record<string, unknown> },
@@ -136,5 +136,8 @@ export class Host {
   }
 }
 
-/** A refusal's words, as the view shows them. */
-export const wordsOf = (e: unknown): string => (e instanceof Error ? e.message : String(e));
+/** A refusal's words, as the view shows them: the host's words, without
+ *  the "MCP error <code>: " that the MCP SDK puts before the message of a
+ *  refused request. */
+export const wordsOf = (e: unknown): string =>
+  (e instanceof Error ? e.message : String(e)).replace(/^MCP error -?\d+: /, '');
