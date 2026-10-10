@@ -79,3 +79,9 @@
   border: 0;
   background: #fff;
 }
+
+/* While a menu watches the pointer's way to it, a frame takes no pointer,
+   so the view hears every move over the frame. */
+:root[data-hover-popup] iframe {
+  pointer-events: none;
+}

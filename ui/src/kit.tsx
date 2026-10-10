@@ -13,6 +13,7 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { autoUpdate, computePosition, flip, offset, shift, size } from '@floating-ui/dom';
+import { safeTriangle } from './safeTriangle.ts';
 
 /** A Remix Icon by its remixicon.com name, at a size in pixels, in the
  *  colour of the text around it. */
@@ -125,8 +126,9 @@ export function SettingsSearch({
 }
 
 /** A menu on the frosted popup surface, under the element it opens from
- *  and inside the page. It closes when the pointer leaves it, on Escape,
- *  and on a press outside it. */
+ *  and inside the page. It stays open while the pointer is on that
+ *  element, on the menu or on the way between them, and closes when the
+ *  pointer is anywhere else, on Escape, and on a press outside it. */
 export function MenuSurface({
   anchor,
   minWidth,
@@ -160,6 +162,7 @@ export function MenuSurface({
       document.removeEventListener('pointerdown', outside);
     };
   }, []);
+  useEffect(() => safeTriangle(anchor, () => menu.current!, close), [anchor]);
   useLayoutEffect(() => {
     const floating = menu.current!;
     let live = true;
@@ -194,13 +197,7 @@ export function MenuSurface({
     };
   }, [anchor, minWidth]);
   return createPortal(
-    <div
-      ref={menu}
-      className="hs-menu-position"
-      onMouseLeave={close}
-      onClick={(e) => e.stopPropagation()}
-      style={pos}
-    >
+    <div ref={menu} className="hs-menu-position" onClick={(e) => e.stopPropagation()} style={pos}>
       <div
         className="hs-menu hs-menu-surface"
         style={{ minWidth: `min(${minWidth}px, calc(100vw - var(--space) * 4))` }}
