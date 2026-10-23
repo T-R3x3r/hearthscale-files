@@ -36,7 +36,9 @@ The view reaches the platform only through the extensions `uses` names:
 and the reads inside them (`hearthscale/fs/list`, `read`, `raw` and
 `icon`), each confined by the platform to those folders; `files.open` to
 open a file in the system's app. "Add to chat" puts a file on the chats
-on screen as a removable chip, through `ui/update-model-context`.
+on screen as a removable chip, through `ui/update-model-context`. The
+view names its tab after the file it shows, with `hearthscale/ui/set-tab`,
+and says a preview is the file's first part when the read answers `cut`.
 
 The view `shows` files: a file a turn changed outside a git repository
 opens here, on the address `/?path=<absolute path>`, which the view reads

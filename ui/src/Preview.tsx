@@ -158,8 +158,7 @@ export async function readPreview(host: Host, path: string): Promise<Preview> {
   }
   if (read.text === undefined) return { path, show: 'open', size: read.size };
   const drawn = DRAWN[extensionOf(path)];
-  // The platform answers the head of a long file.
-  const partial = new TextEncoder().encode(read.text).length < read.size;
+  const partial = read.cut === true;
   return drawn
     ? { path, show: 'drawn', drawn, text: read.text, partial }
     : { path, show: 'text', text: read.text, partial };

@@ -2,8 +2,9 @@
  * What the view asks of Hearthscale, typed: the folders and files the
  * person gave the app (`roots`), and reads inside them, each one the
  * platform confines to those folders and refuses in words; a file opened
- * in the system's app (`files.open`); and the blocks the view adds to the
- * context of the chats on screen, which show as removable chips.
+ * in the system's app (`files.open`); the name of the view's tab; and the
+ * blocks the view adds to the context of the chats on screen, which show
+ * as removable chips.
  */
 import { App, McpUiMessageResultSchema } from '@modelcontextprotocol/ext-apps';
 
@@ -28,10 +29,15 @@ export interface Head {
   size: number;
   binary: boolean;
   text?: string;
+  /** Set when the text holds only the file's first part. */
+  cut?: true;
 }
 
 /** One MCP content block of the view's context. */
 export type ContextBlock = Record<string, unknown> & { type: string };
+
+/** The longest title `hearthscale/ui/set-tab` takes. */
+const TAB_TITLE_CHARS = 200;
 
 /** The largest file the platform hands the view whole, in bytes. */
 export const RAW_BYTES = 64 * 1024 * 1024;
@@ -94,6 +100,14 @@ export class Host {
    *  address; null where it draws none. */
   async icon(path: string, folder: boolean): Promise<string | null> {
     return (await this.call<{ icon: string | null }>('hearthscale/fs/icon', { path, folder })).icon;
+  }
+
+  /** Names the tab the view fills, cut to the longest title a tab takes;
+   *  null gives back the surface's own title. A view outside a tab names
+   *  nothing. */
+  async nameTab(title: string | null): Promise<void> {
+    if (this.app.getHostContext()?.displayMode !== 'fullscreen') return;
+    await this.call('hearthscale/ui/set-tab', { title: title?.slice(0, TAB_TITLE_CHARS) ?? null });
   }
 
   /** Opens a file in the system's app, on the person's click. */

@@ -199,6 +199,12 @@ export function Files({ host }: { host: Host }) {
     if (mine === previewAsk.current) setPreview(next);
   };
 
+  // The tab is named after the file the preview shows.
+  const shown = preview?.path ?? null;
+  useEffect(() => {
+    void host.nameTab(shown === null ? null : baseName(shown));
+  }, [host, shown]);
+
   const open = async (path: string) => {
     try {
       await host.open(path);
@@ -212,7 +218,7 @@ export function Files({ host }: { host: Host }) {
   const attach = async (path: string) => {
     let block: Record<string, unknown> & { type: string };
     const head = await host.read(path).catch(() => null);
-    if (head?.text !== undefined && new TextEncoder().encode(head.text).length >= head.size) {
+    if (head?.text !== undefined && !head.cut) {
       block = { type: 'resource', resource: { uri: fileUri(path), text: head.text } };
     } else {
       const file = await host.raw(path).catch(() => null);
