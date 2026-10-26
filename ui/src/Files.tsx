@@ -199,10 +199,11 @@ export function Files({ host }: { host: Host }) {
     if (mine === previewAsk.current) setPreview(next);
   };
 
-  // The tab is named after the file the preview shows.
+  // The tab is named after the file the preview shows. A refusal leaves the
+  // tab the title it has, and the view shows the same.
   const shown = preview?.path ?? null;
   useEffect(() => {
-    void host.nameTab(shown === null ? null : baseName(shown));
+    host.nameTab(shown === null ? null : baseName(shown)).catch(() => {});
   }, [host, shown]);
 
   const open = async (path: string) => {
