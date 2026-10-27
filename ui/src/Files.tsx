@@ -200,7 +200,7 @@ export function Files({ host }: { host: Host }) {
   };
 
   // The tab is named after the file the preview shows. A refusal leaves the
-  // tab the title it has, and the view shows the same.
+  // tab the title it has.
   const shown = preview?.path ?? null;
   useEffect(() => {
     host.nameTab(shown === null ? null : baseName(shown)).catch(() => {});

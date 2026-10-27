@@ -103,10 +103,8 @@ export class Host {
   }
 
   /** Names the tab the view fills, cut to the longest title a tab takes;
-   *  null gives back the surface's own title. A view outside a tab names
-   *  nothing. */
+   *  null gives back the surface's own title. */
   async nameTab(title: string | null): Promise<void> {
-    if (this.app.getHostContext()?.displayMode !== 'fullscreen') return;
     await this.call('hearthscale/ui/set-tab', { title: title?.slice(0, TAB_TITLE_CHARS) ?? null });
   }
 
