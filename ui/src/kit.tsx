@@ -35,9 +35,6 @@ export function Icon({
   );
 }
 
-/** A tip floated over the view from its mark: under it and from its right
- *  edge where there is room, else on the other side, shifted along that
- *  side so the whole tip stays inside the view. */
 function FloatingTip({ anchor, title }: { anchor: HTMLElement; title: string }) {
   const floating = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<CSSProperties>({ visibility: 'hidden' });
@@ -68,8 +65,7 @@ function FloatingTip({ anchor, title }: { anchor: HTMLElement; title: string }) 
 }
 
 /** The square button of the view's toolbar, named by its tip, which the
- *  keyboard reaches and presses with Enter or Space. A press closes the
- *  tip until the pointer comes back. */
+ *  keyboard reaches and presses with Enter or Space. */
 export function StripButton({
   label,
   onClick,
