@@ -92,7 +92,7 @@ export function StripButton({
         onClick();
       }}
       onMouseEnter={(e) => setAnchor(e.currentTarget)}
-      onFocus={(e) => setAnchor(e.currentTarget)}
+      onFocus={(e) => e.currentTarget.matches(':focus-visible') && setAnchor(e.currentTarget)}
       onMouseLeave={() => setAnchor(null)}
       onBlur={() => setAnchor(null)}
       onPointerDown={() => setAnchor(null)}
