@@ -35,40 +35,41 @@ export function Icon({
   );
 }
 
-/** Hover tip content box; the parent carries `hs-tipwrap` and its place.
- *  A press closes it until the pointer leaves. */
-export function Tip({ style, title }: { style?: CSSProperties; title: string }) {
-  const tip = useRef<HTMLSpanElement>(null);
-  useEffect(() => {
-    const wrap = tip.current?.parentElement;
-    if (!wrap) return;
-    const close = () => {
-      wrap.dataset.tipClosed = 'true';
+/** A tip floated over the view from its mark: under it and from its right
+ *  edge where there is room, else on the other side, shifted along that
+ *  side so the whole tip stays inside the view. */
+function FloatingTip({ anchor, title }: { anchor: HTMLElement; title: string }) {
+  const floating = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<CSSProperties>({ visibility: 'hidden' });
+  useLayoutEffect(() => {
+    let live = true;
+    const update = () => {
+      void computePosition(anchor, floating.current!, {
+        placement: 'bottom-end',
+        middleware: [offset(6), flip({ padding: 8 }), shift({ padding: 8 })],
+      }).then(({ x, y }) => {
+        if (live) setPos({ left: x, top: y, visibility: 'visible' });
+      });
     };
-    const open = () => {
-      delete wrap.dataset.tipClosed;
-    };
-    const blur = () => {
-      if (wrap.matches(':hover')) close();
-    };
-    wrap.addEventListener('pointerdown', close);
-    wrap.addEventListener('mouseleave', open);
-    window.addEventListener('blur', blur);
+    const cleanup = autoUpdate(anchor, floating.current!, update);
     return () => {
-      wrap.removeEventListener('pointerdown', close);
-      wrap.removeEventListener('mouseleave', open);
-      window.removeEventListener('blur', blur);
+      live = false;
+      cleanup();
     };
-  }, []);
-  return (
-    <span ref={tip} className="hs-tip hs-tooltip" data-sub="false" style={style}>
-      <span className="hs-tooltip-title">{title}</span>
-    </span>
+  }, [anchor]);
+  return createPortal(
+    <div ref={floating} className="hs-menu-position hs-floating-tip" style={pos}>
+      <span className="hs-tip hs-tooltip" data-sub="false">
+        <span className="hs-tooltip-title">{title}</span>
+      </span>
+    </div>,
+    document.documentElement,
   );
 }
 
 /** The square button of the view's toolbar, named by its tip, which the
- *  keyboard reaches and presses with Enter or Space. */
+ *  keyboard reaches and presses with Enter or Space. A press closes the
+ *  tip until the pointer comes back. */
 export function StripButton({
   label,
   onClick,
@@ -78,6 +79,7 @@ export function StripButton({
   onClick: () => void;
   children: ReactNode;
 }) {
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   return (
     <span
       role="button"
@@ -89,10 +91,15 @@ export function StripButton({
         e.preventDefault();
         onClick();
       }}
-      className="hs-hovbox-ink hs-tipwrap hs-inkdim hs-panel-button"
+      onMouseEnter={(e) => setAnchor(e.currentTarget)}
+      onFocus={(e) => setAnchor(e.currentTarget)}
+      onMouseLeave={() => setAnchor(null)}
+      onBlur={() => setAnchor(null)}
+      onPointerDown={() => setAnchor(null)}
+      className="hs-hovbox-ink hs-inkdim hs-panel-button"
     >
       {children}
-      <Tip style={{ top: 'calc(var(--space) * 8)', right: 0 }} title={label} />
+      {anchor?.isConnected && <FloatingTip anchor={anchor} title={label} />}
     </span>
   );
 }
