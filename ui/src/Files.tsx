@@ -2,10 +2,9 @@
  * The Files view: a folder's tree on the right, a preview on the left,
  * read through the platform inside the folders the person gave the app.
  * The view starts in the folder the person gave last, or at the file the
- * window opened it at, selected in its folder with its preview; the
- * pointer's back and forward walk the folders it came through. A folder
- * opens with its rows' system icons in hand. A read the platform refused
- * says why.
+ * window opened it at, selected in its folder with its preview; back and
+ * forward walk the folders and files it came through. A folder opens with
+ * its rows' system icons in hand. A read the platform refused says why.
  */
 import {
   useCallback,
@@ -106,6 +105,19 @@ function TreeRow({
 const startOf = (mounts: Mount[]): string | null =>
   mounts.filter((m) => m.handle !== 'data').at(-1)?.path ?? null;
 
+/** A page of the view: the folder in the tree and the file in the preview. */
+interface Place {
+  folder: string;
+  file: string | null;
+}
+
+/** Whether a read of a path was answered. */
+const exists = (read: Promise<unknown>): Promise<boolean> =>
+  read.then(
+    () => true,
+    () => false,
+  );
+
 /** The view before the person has given the app a folder. */
 function NoFolder({ onPick }: { onPick: () => void }) {
   return (
@@ -136,12 +148,20 @@ export function Files({ host }: { host: Host }) {
   // Only the newest request of each kind may say what the view shows.
   const listingAsk = useRef(0);
   const previewAsk = useRef(0);
-  // The folders walked through, and where in them the tree stands. A
-  // folder opened any way but a step drops the folders ahead, as a
-  // browser drops the pages it had gone forward to.
-  const walked = useRef<string[]>([]);
-  const stood = useRef(-1);
+  const here = useRef<Place | null>(null);
+  const places = useRef<{ back: Place[]; forward: Place[] }>({ back: [], forward: [] });
+  const walking = useRef(Promise.resolve());
   const icons = useCallback<IconSource>((path, isDir) => host.icon(path, isDir), [host]);
+
+  /** Stands the view on a place the person moved to, which drops the places
+   *  ahead. */
+  const move = (to: Place) => {
+    const from = here.current;
+    here.current = to;
+    if (!from || (from.folder === to.folder && from.file === to.file)) return;
+    places.current.back.push(from);
+    places.current.forward = [];
+  };
 
   /** Opens a folder in the tree; answers its listing, or null when the
    *  read was refused or a newer one took its place. */
@@ -162,42 +182,48 @@ export function Files({ host }: { host: Host }) {
       ...next.files.map((name) => ({ path: joinPath(next.path, name), isDir: false })),
     ]);
     if (mine !== listingAsk.current) return null;
-    if (remember && walked.current[stood.current] !== next.path) {
-      walked.current = [...walked.current.slice(0, stood.current + 1), next.path];
-      stood.current = walked.current.length - 1;
-    }
+    if (remember) move({ folder: next.path, file: here.current?.file ?? null });
     setFilter('');
     setListRefusal(null);
     setListing(next);
     return next;
   };
 
-  const walk = (by: number) => {
-    const to = stood.current + by;
-    const path = walked.current[to];
-    if (path === undefined) return;
-    stood.current = to;
-    void load(path, false);
+  const show = async (path: string, remember = true) => {
+    const mine = ++previewAsk.current;
+    const next = await readPreview(host, path);
+    if (mine !== previewAsk.current) return;
+    if (remember && here.current) move({ ...here.current, file: path });
+    setPreview(next);
+  };
+
+  /** Steps to the nearest place that still exists. A file outside the
+   *  place's folder is only what the preview kept, so its loss leaves the
+   *  folder a place. */
+  const walk = async (direction: 'back' | 'forward') => {
+    const other = direction === 'back' ? 'forward' : 'back';
+    const trail = places.current;
+    while (trail[direction].length) {
+      const to = trail[direction].pop()!;
+      if (!(await exists(host.list(to.folder)))) continue;
+      if (to.file && !(await exists(host.read(to.file)))) {
+        if (joinPath(to.folder, baseName(to.file)) === to.file) continue;
+        to.file = null;
+      }
+      const from = here.current!;
+      trail[other].push(from);
+      here.current = to;
+      if (to.folder !== from.folder) void load(to.folder, false);
+      if (to.file && to.file !== from.file) void show(to.file, false);
+      if (!to.file) {
+        ++previewAsk.current;
+        setPreview(null);
+      }
+      return;
+    }
   };
   const walkRef = useRef(walk);
   walkRef.current = walk;
-
-  // The pointer's back and forward buttons walk the folders.
-  useEffect(() => {
-    const onDown = (e: MouseEvent) => {
-      if (e.button !== 3 && e.button !== 4) return;
-      e.preventDefault();
-      walkRef.current(e.button === 3 ? -1 : 1);
-    };
-    window.addEventListener('mousedown', onDown);
-    return () => window.removeEventListener('mousedown', onDown);
-  }, []);
-
-  const show = async (path: string) => {
-    const mine = ++previewAsk.current;
-    const next = await readPreview(host, path);
-    if (mine === previewAsk.current) setPreview(next);
-  };
 
   // The tab is named after the file the preview shows. A refusal leaves the
   // tab the title it has.
@@ -247,11 +273,12 @@ export function Files({ host }: { host: Host }) {
    *  preview. */
   const reveal = async (path: string) => {
     setMounts(await host.mounts());
-    const shown = await load(folderOf(path));
+    const shown = await load(folderOf(path), false);
     if (!shown) return;
     const file = joinPath(shown.path, baseName(path));
+    move({ folder: shown.path, file });
     setFocus(file);
-    void show(file);
+    void show(file, false);
   };
   const revealRef = useRef(reveal);
   revealRef.current = reveal;
@@ -269,6 +296,10 @@ export function Files({ host }: { host: Host }) {
 
   useEffect(() => {
     host.onRevealed((path) => void revealRef.current(path));
+    // One step at a time, so each press starts from the place the last reached.
+    host.onHistory((direction) => {
+      walking.current = walking.current.then(() => walkRef.current(direction));
+    });
     void host.mounts().then(begin, () => begin([]));
   }, []);
 

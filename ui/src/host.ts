@@ -146,6 +146,16 @@ export class Host {
       if (path !== null) fn(path);
     };
   }
+
+  /** Calls `fn` with each press of a back or forward button or key on the
+   *  view's tab. */
+  onHistory(fn: (direction: 'back' | 'forward') => void): void {
+    this.app.fallbackNotificationHandler = async ({ method, params }) => {
+      if (method === 'hearthscale/ui/history') {
+        fn((params as { direction: 'back' | 'forward' }).direction);
+      }
+    };
+  }
 }
 
 /** A refusal's words, as the view shows them: the host's words, without

@@ -39,6 +39,8 @@ open a file in the system's app. "Add to chat" puts a file on the chats
 on screen as a removable chip, through `ui/update-model-context`. The
 view names its tab after the file it shows, with `hearthscale/ui/set-tab`,
 and says a preview is the file's first part when the read answers `cut`.
+`hearthscale/ui/history` walks the view back and forward through the folders
+and files the person moved to, kept in memory.
 
 The view `shows` files: a file a turn changed outside a git repository
 opens here, on the address `/?path=<absolute path>`, which the view reads
