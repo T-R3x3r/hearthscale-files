@@ -42,12 +42,23 @@ const TAB_TITLE_CHARS = 200;
 /** The largest file the platform hands the view whole, in bytes. */
 export const RAW_BYTES = 64 * 1024 * 1024;
 
-/** The file an address names, `/?path=<absolute path>`; null for an
- *  address without one. */
-function pathOf(link: unknown): string | null {
+/** A file the window opens the view at, and the page to show it at. */
+export interface Revealed {
+  path: string;
+  /** From 1; null shows the file from its start. */
+  page: number | null;
+}
+
+/** The file an address names, `/?path=<absolute path>`, with the page
+ *  `&page=<n>` names; null for an address without a path. */
+function revealedOf(link: unknown): Revealed | null {
   const url = (link as { url?: unknown } | undefined)?.url;
   if (typeof url !== 'string') return null;
-  return new URL(url, 'https://files.invalid').searchParams.get('path');
+  const params = new URL(url, 'https://files.invalid').searchParams;
+  const path = params.get('path');
+  if (path === null) return null;
+  const page = Number(params.get('page'));
+  return { path, page: Number.isInteger(page) && page > 0 ? page : null };
 }
 
 export class Host {
@@ -133,17 +144,17 @@ export class Host {
   }
 
   /** The file the window opened the view at, such as a file a turn
-   *  changed; null when it opened on none. */
-  revealed(): string | null {
-    return pathOf(this.app.getHostContext()?.['openai/deepLink']);
+   *  changed or a page an answer cites; null when it opened on none. */
+  revealed(): Revealed | null {
+    return revealedOf(this.app.getHostContext()?.['openai/deepLink']);
   }
 
   /** Calls `fn` with each file the window opens the view at while it
    *  shows. */
-  onRevealed(fn: (path: string) => void): void {
+  onRevealed(fn: (revealed: Revealed) => void): void {
     this.app.onhostcontextchanged = (changed) => {
-      const path = pathOf(changed['openai/deepLink']);
-      if (path !== null) fn(path);
+      const revealed = revealedOf(changed['openai/deepLink']);
+      if (revealed !== null) fn(revealed);
     };
   }
 

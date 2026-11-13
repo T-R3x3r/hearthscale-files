@@ -42,11 +42,12 @@ and says a preview is the file's first part when the read answers `cut`.
 `hearthscale/ui/history` walks the view back and forward through the folders
 and files the person moved to, kept in memory.
 
-The view `shows` files: a file a turn changed outside a git repository
-opens here, on the address `/?path=<absolute path>`, which the view reads
-as `openai/deepLink`. It shows the file's folder with the file selected
-and its preview; Hearthscale gives the app that folder before it opens
-the view.
+The view `shows` files: a file a turn changed outside a git repository,
+and a file an answer cites under **Sources**, opens here, on the address
+`/?path=<absolute path>`, which the view reads as `openai/deepLink`. It
+shows the file's folder with the file selected and its preview;
+Hearthscale gives the app that folder before it opens the view. A cited
+page adds `&page=<n>`, from 1, and a PDF then shows from that page.
 
 ## Traps
 

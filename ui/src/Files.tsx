@@ -16,7 +16,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from 'react';
-import { wordsOf, type Host, type Listing, type Mount } from './host.ts';
+import { wordsOf, type Host, type Listing, type Mount, type Revealed } from './host.ts';
 import { Icon, MItem, MenuSurface, SettingsSearch, StripButton } from './kit.tsx';
 import { FileKindGlyph, SystemIcon, primeIcons, type IconSource } from './kinds.tsx';
 import { PreviewBody, readPreview, type Preview } from './Preview.tsx';
@@ -268,16 +268,21 @@ export function Files({ host }: { host: Host }) {
   /** The row the tree scrolls to once its folder shows. */
   const [focus, setFocus] = useState<string | null>(null);
 
+  /** The page a revealed file shows at, until the preview shows another
+   *  file. */
+  const [page, setPage] = useState<Revealed | null>(null);
+
   /** Shows a file the window opened the view at: its folder, read with
    *  the folders the app was given since, and the file selected with its
-   *  preview. */
-  const reveal = async (path: string) => {
+   *  preview, at its page where the address names one. */
+  const reveal = async ({ path, page: at }: Revealed) => {
     setMounts(await host.mounts());
     const shown = await load(folderOf(path), false);
     if (!shown) return;
     const file = joinPath(shown.path, baseName(path));
     move({ folder: shown.path, file });
     setFocus(file);
+    setPage({ path: file, page: at });
     void show(file, false);
   };
   const revealRef = useRef(reveal);
@@ -295,7 +300,7 @@ export function Files({ host }: { host: Host }) {
   };
 
   useEffect(() => {
-    host.onRevealed((path) => void revealRef.current(path));
+    host.onRevealed((revealed) => void revealRef.current(revealed));
     // One step at a time, so each press starts from the place the last reached.
     host.onHistory((direction) => {
       walking.current = walking.current.then(() => walkRef.current(direction));
@@ -419,6 +424,7 @@ export function Files({ host }: { host: Host }) {
           {preview ? (
             <PreviewBody
               preview={preview}
+              page={page?.path === preview.path ? page.page : null}
               host={host}
               icons={icons}
               onOpen={(path) => void open(path)}

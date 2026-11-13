@@ -261,14 +261,24 @@ function useAddress(file: Blob): string {
 }
 
 /** A file drawn from its bytes. */
-function WholePreview({ whole, file, path }: { whole: Whole; file: Blob; path: string }) {
+function WholePreview({
+  whole,
+  file,
+  path,
+  page,
+}: {
+  whole: Whole;
+  file: Blob;
+  path: string;
+  page: number | null;
+}) {
   const address = useAddress(file);
   const [failed, setFailed] = useState<string | null>(null);
-  const [page, setPage] = useState<string | null>(null);
+  const [markup, setMarkup] = useState<string | null>(null);
   useEffect(() => {
     if (whole !== 'page') return;
     let live = true;
-    void file.text().then((text) => live && setPage(text));
+    void file.text().then((text) => live && setMarkup(text));
     return () => {
       live = false;
     };
@@ -289,20 +299,23 @@ function WholePreview({ whole, file, path }: { whole: Whole; file: Blob; path: s
         </div>
       );
     case 'pdf':
-      return <Pdf file={file} onFail={setFailed} />;
+      return <Pdf file={file} page={page} onFail={setFailed} />;
     case 'page':
       // A page's own scripts and forms never run: the frame allows none.
-      return page === null ? null : <iframe className="files-page" sandbox="" srcDoc={page} />;
+      return markup === null ? null : <iframe className="files-page" sandbox="" srcDoc={markup} />;
   }
 }
 
 export function PreviewBody({
   preview,
+  page,
   host,
   icons,
   onOpen,
 }: {
   preview: Preview;
+  /** The page a document shows at first, from 1; null for its start. */
+  page: number | null;
   host: Host;
   icons: IconSource;
   /** Opens the file in the system's app. */
@@ -318,6 +331,7 @@ export function PreviewBody({
           whole={preview.whole}
           file={preview.file}
           path={preview.path}
+          page={page}
         />
       );
     case 'drawn':
